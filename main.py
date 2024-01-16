@@ -2,6 +2,8 @@ from llama_cpp import Llama
 from functionary.prompt_template import get_prompt_template_from_tokenizer
 from transformers import AutoTokenizer
 from huggingface_hub import hf_hub_download
+from termcolor import colored
+import json
 
 import asyncio
 
@@ -51,39 +53,39 @@ def run_inference(messages, tools):
 
 async def main():
     messages = [
-        {"role": "user", "content": "what's the weather like in Santa Cruz, CA?"}
+        {"role": "user", "content": "what's the weather like in Santa Cruz, CA compared to Seattle, WA?"}
     ]
 
     from chatlab import tool_result, FunctionRegistry
     from pydantic import Field
+    import random
 
     def get_current_weather(location: str = Field(description="The city and state, e.g., San Francisco, CA")):
         """Get the current weather"""
 
         return {
-            "temperature": 75,
+            "temperature": 75 + random.randint(-5, 5),
             "units": "F",
-            "weather": "sunny",
+            "weather": random.choice(["sunny", "cloudy", "rainy", "windy"]),
         }
 
     fr = FunctionRegistry()
     fr.register(get_current_weather)
 
-    print(fr.tools)
+    print(colored("Tools: ", "cyan"))
+    print(colored(json.dumps(fr.tools, indent=2), "cyan"))
 
     response = run_inference(messages, fr.tools)
     messages.append(response)
 
     if response.get('content') is not None:
-        print("Assistant: ", response['content'])
+        print(colored(f"Assistant: {response['content']}", "cyan"))
 
     if response.get('tool_calls') is not None:
         for tool in response['tool_calls']:
-            print(tool)
-
             requested_function = tool['function']
             result = await fr.call(requested_function['name'], requested_function['arguments'])
-            print(f"  𝑓  {requested_function['name']}(...) -> ", str(result))
+            print(colored(f"  𝑓  {requested_function['name']}({requested_function['arguments']})", "magenta"), " -> ", colored(str(result), "light_cyan"))
 
             tool_call_response = tool_result(tool['id'], content=str(result))
             # OpenAI does not require the name field, but it is required for functionary's tool_result
@@ -93,7 +95,7 @@ async def main():
         
         # Run inference again after running tools
         response = run_inference(messages, fr.tools)
-        print("Assistant: ", response['content'])
+        print(colored(f"Assistant: {response['content']}", "yellow"))
 
 
 

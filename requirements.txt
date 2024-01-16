@@ -5,3 +5,4 @@ torchvision
 torchaudio
 huggingface_hub
 chatlab
+termcolor
