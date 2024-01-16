@@ -1,0 +1,6 @@
+llama-cpp-python
+transformers
+torch
+torchvision
+torchaudio
+huggingface_hub
